@@ -7,11 +7,15 @@ Supported sources for addons and tools are:
 * flightsim.to
 * github.com
 
+![Picture Application](pics/application.png)
+
 ### Installation and Execution
 Download the latest released version. Unpack to a folder. For configuration edit addons.xml. Execute checkAddons.exe.
 
 ### Configuration
 For configuration edit addons.xml with a proper editor. E.g. "Notepad", "Editor", ["Notepad++"](https://notepad-plus-plus.org/downloads/) or ["Visual Studio Code"](https://code.visualstudio.com/)". 
+
+![Picture configuration](pics/configuration.PNG)
 
 For each addon or tool add a new line in the xml file and adjust the attributes like name and url accordingly. Edit the parts between the "".
 
