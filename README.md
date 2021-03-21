@@ -10,7 +10,7 @@ Supported sources for addons and tools are:
 ![Picture Application](pics/application.png)
 
 ### Installation and Execution
-Download the latest released version. Unpack to a folder. For configuration edit addons.xml. Execute checkAddons.exe.
+[Download the latest released version](https://github.com/Koseng/MSFSAddonVersionChecker/releases/latest). Unpack to a folder. For configuration edit addons.xml. Execute checkAddons.exe.
 
 ### Configuration
 For configuration edit addons.xml with a proper editor. E.g. "Notepad", "Editor", ["Notepad++"](https://notepad-plus-plus.org/downloads/) or ["Visual Studio Code"](https://code.visualstudio.com/)". 
