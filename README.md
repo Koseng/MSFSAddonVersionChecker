@@ -20,8 +20,8 @@ For configuration edit addons.xml with a proper editor. E.g. "Notepad", "Editor"
 For each addon or tool add a new line in the xml file and adjust the attributes like name and url accordingly. Edit the parts between the "".
 
 * **name**: Enter the exact name of the addon folder in your community folder. For a tool just enter the name of the tool.
-* **url**: Enter the url to the flightsim or github page to the tool or addon like in the examples.
-* **installedVersion**: For tools enter you installed version manually. For addons in the community folder it is auto detected. You can also manually enter an installed version for addons. That can be useful if the addon maker does not properly update its version information.
+* **url**: Enter the url to the flightsim or github page like in the examples.
+* **installedVersion**: For tools enter you installed version manually. For addons the version is auto detected. You can also manually enter an installed version for addons. That can be useful if the addon maker does not properly update its version information.
 * **versionKey**: For github you can optionally add a versionKey. That is necessary if an addon maker does release different addons in the the same github repository like Working-Title.
 
 ### Development information
