@@ -24,6 +24,11 @@ For each addon or tool add a new line in the xml file and adjust the attributes 
 * **installedVersion**: For tools enter you installed version manually. For addons the version is auto detected. You can also manually enter an installed version for addons. That can be useful if the addon maker does not properly update its version information.
 * **versionKey**: For github you can optionally add a versionKey. That is necessary if an addon maker does release different addons in the the same github repository like Working-Title.
 
+#### Community Folder
+If your addon versions are note detected - "Unavailable", you might have a non standard community folder. Add your community folder in the configuration.
+
+![Picture community](pics/community.PNG)
+
 ### Development information
 #### Execute Python Script
 If you want to run the python script directly:
