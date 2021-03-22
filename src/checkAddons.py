@@ -3,17 +3,6 @@ import dateutil.parser
 from xml.dom import minidom
 from bs4 import BeautifulSoup
 
-class colors:
-    STANDARD = ""
-    VIOLET = '\033[95m'
-    BLUE = '\033[94m'
-    CYAN = '\033[96m'
-    GREEN = '\033[92m'
-    YELLOW = '\033[93m'
-    RED = '\033[91m'
-    ENDC = '\033[0m'
-    WHITE = '\033[1m'
-
 # Set execution folder to folder of .py file
 os.chdir(sys.path[0]) 
 # MS Store
@@ -29,7 +18,7 @@ if doc.documentElement.hasAttribute("communityFolder"):
 headers = {'user-agent': 'Mozilla/5.0'}
 
 print("")
-print("{:<35} {:<20} {:<20} {:<25}".format("Name", "Installed", "Online", "Release Date"))
+print("{:<35}{:<20}{:<20}{:<25}".format("Name", "Installed", "Online", "Release Date"))
 print("================================================================================================")
 for addon in addons:
     addonName = addon.getAttribute("name")
@@ -75,20 +64,23 @@ for addon in addons:
                 onlineReleaseDate = dt.strftime("%B %d, %Y")
     if addon.hasAttribute("installedVersion"):
         installedVersion = addon.getAttribute("installedVersion")
-    color = colors.STANDARD
-    # check if version is newer
-    installedCode = re.search(r'(\d+\.\d+)', installedVersion)
-    onlineCode = re.search(r'(\d+\.\d+)', onlineVersion)
+    newer = ""
+    # check if version is newer. xx.yy[.zz][.vv]
+    installedCode = re.search(r'(\d+\.\d+(\.\d+)*)', installedVersion)
+    onlineCode = re.search(r'(\d+\.\d+(\.\d+)*)', onlineVersion)
     if installedCode and onlineCode: # found results for both
         installedNumbers = installedCode.group(1).split(".")
         onlineNumbers = onlineCode.group(1).split(".")
-        if onlineNumbers[0] > installedNumbers[0]:
-            color = colors.YELLOW
-        else: 
-            if onlineNumbers[0] == installedNumbers[0] and onlineNumbers[1] > installedNumbers[1]:
-                color = colors.YELLOW
+        positions = min(len(installedNumbers), len(onlineNumbers))
+        for i in range(positions):
+            if onlineNumbers[i] < installedNumbers[i]:
+                break
+            if onlineNumbers[i] > installedNumbers[i]:
+                newer = "<<<<<"
+                break
+            # if equal check next position
     # Output
-    print(color + "{:<35} {:<20} {:<20} {:<25}".format(addonName, installedVersion, onlineVersion, onlineReleaseDate) + colors.ENDC)
+    print("{:<35}{:<10}{:<10}{:<20}{:<25}".format(addonName, installedVersion, newer, onlineVersion, onlineReleaseDate))
     print("------------------------------------------------------------------------------------------------")
 input("Press enter to exit.")
 
