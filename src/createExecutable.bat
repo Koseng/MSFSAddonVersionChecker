@@ -1,1 +1,1 @@
-pyinstaller --onefile checkAddons.py
+pyinstaller --onefile --windowed checkAddons.py
