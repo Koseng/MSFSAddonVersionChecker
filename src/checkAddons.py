@@ -1,5 +1,6 @@
 import os, sys, json, re
 import encodings.idna # necessary for .exe
+import threading
 import asyncio
 import httpx
 import dateutil.parser
@@ -8,6 +9,12 @@ from xml.dom import minidom
 from bs4 import BeautifulSoup
 
 _xmlFile = "addons.xml"
+
+# Create iterator for handling list in even sized chunks of size n
+def chunks(lst, n):
+    for i in range(0, len(lst), n):
+        yield lst[i:i + n]
+
 
 def update_from_xml(doc, window):
     addons = doc.getElementsByTagName("addon")
@@ -20,6 +27,7 @@ def update_from_xml(doc, window):
             window[(i,"version")].update(addons[i].getAttribute("installedVersion"))
         if addons[i].hasAttribute("versionKey"):
             window[(i,"key")].update(addons[i].getAttribute("versionKey"))
+
 
 def write_to_xml(values, rows):
     doc = minidom.parseString("<configuration></configuration>")
@@ -38,16 +46,15 @@ def write_to_xml(values, rows):
     with open(_xmlFile, 'w') as writer:
         doc.writexml(writer, indent="\t", addindent="\t", newl="\n", encoding="utf-8")
 
+
 def show_error(textElement, text):
     textElement.update(background_color='lightsalmon')
     textElement.update(text)
 
 
-def disable_input_fields(window, values, rows):
-    for j in range(rows):
-        if values:
-            doDisable = "flightsim.to" in values[(j,"url")]
-            window[(j,"key")].update(disabled=doDisable)
+def disable_input_field(element, value):
+    doDisable = "flightsim.to" in value
+    element.update(disabled=doDisable)
 
 
 async def check_flightsim(url, onlineVersion, onlineReleaseDate):
@@ -93,6 +100,27 @@ async def check_github(url, onlineVersion, onlineReleaseDate, key):
     return errorText, onlineVersion, onlineReleaseDate
 
 
+def is_newer_version(installedVersion, onlineVersion):
+    isNewer = False
+    regex = r'(\d+\.\d+(\.\d+)*)'
+    # check if version is newer. xx.yy[.zz][.vv]
+    installedCode = re.search(regex, installedVersion)
+    onlineCode = re.search(regex, onlineVersion)
+    if installedCode and onlineCode: # found results for both
+        installedNumbers = installedCode.group(1).split(".")
+        onlineNumbers = onlineCode.group(1).split(".")
+        positionCount = min(len(installedNumbers), len(onlineNumbers))
+        for i in range(positionCount):
+            if onlineNumbers[i] < installedNumbers[i]:
+                break
+            if onlineNumbers[i] > installedNumbers[i]:
+                # online version is newer
+                isNewer = True
+                break
+            # if equal check next position
+    return isNewer
+
+
 async def check_addon(window, values, k, communityFolder):
     try:
         errorText = None
@@ -111,28 +139,15 @@ async def check_addon(window, values, k, communityFolder):
             if "flightsim.to" in url:
                 errorText, onlineVersion, onlineReleaseDate = await check_flightsim(url, onlineVersion, onlineReleaseDate)
             # Github.com
-            if "github.com" in url:
+            elif "github.com" in url:
                 key = values[(k,"key")]
                 errorText, onlineVersion, onlineReleaseDate = await check_github(url, onlineVersion, onlineReleaseDate,key)
             # Overwrite installed version if set
             if values[(k,"version")]:
                 installedVersion = values[(k,"version")]
-            # check if version is newer. xx.yy[.zz][.vv]
-            installedCode = re.search(r'(\d+\.\d+(\.\d+)*)', installedVersion)
-            onlineCode = re.search(r'(\d+\.\d+(\.\d+)*)', onlineVersion)
-            if installedCode and onlineCode: # found results for both
-                installedNumbers = installedCode.group(1).split(".")
-                onlineNumbers = onlineCode.group(1).split(".")
-                positions = min(len(installedNumbers), len(onlineNumbers))
-                for i in range(positions):
-                    if onlineNumbers[i] < installedNumbers[i]:
-                        break
-                    if onlineNumbers[i] > installedNumbers[i]:
-                        # online version is newer, set color
-                        window[(k,"result")].update(background_color='lightyellow')
-                        window[(k,"name")].update(background_color='lightyellow')
-                        break
-                    # if equal check next position
+            if is_newer_version(installedVersion, onlineVersion):
+                window[(k,"result")].update(background_color='lightyellow')
+                window[(k,"name")].update(background_color='lightyellow')
             # Output
             if not errorText:
                 window[(k,"result")].update("{:<16}{:<16}{:<25}".format(installedVersion, onlineVersion, onlineReleaseDate))
@@ -142,8 +157,22 @@ async def check_addon(window, values, k, communityFolder):
     except Exception as ex:
         show_error(window[(k,"result")], str(ex))
 
-        
-async def main():
+
+async def check_all_addons(window, values, communityFolder, rows):
+    window["Run"].update(disabled=True)
+    window["Save"].update(disabled=True)
+    for rowBatch in chunks(range(rows), 10): # batches of 10
+        taskList = [asyncio.create_task(check_addon(window, values, k, communityFolder)) for k in rowBatch]
+        await asyncio.gather(*taskList)
+    window["Run"].update(disabled=False)
+    window["Save"].update(disabled=False)
+
+
+def addon_worker_thread(window, values, communityFolder, rows):
+    asyncio.run(check_all_addons(window, values, communityFolder, rows))
+   
+
+def main():
     # Set execution folder to folder of .py file
     os.chdir(sys.path[0]) 
     # MS Store
@@ -159,9 +188,10 @@ async def main():
     doc = minidom.parse(_xmlFile)
     MAX_ROWS = max(len(doc.getElementsByTagName("addon")) + 10, 30)
 
+    # Generate UI
     column_layout= [[ sg.Text(size=(52, 1), pad=(1,1), key=(i, "result"), font=("Courier", 10), background_color="lightgrey", text_color="black"),
                     sg.Input(size=(30, 1), pad=(1,1), key=(i, "name"), border_width=0),
-                    sg.Input(size=(70, 1), pad=(1,1), key=(i, "url"), border_width=0),
+                    sg.Input(size=(70, 1), pad=(1,1), key=(i, "url"), border_width=0, enable_events=True),
                     sg.Input(size=(10, 1), pad=(1,1), key=(i, "version"), border_width=0, tooltip="Set fixed installed version"),
                     sg.Input(size=(10, 1), pad=(1,1), key=(i, "key"), disabled_readonly_background_color = "lightgrey", border_width=0, tooltip="Version filter key for github")] 
                     for i in range(MAX_ROWS)]
@@ -173,33 +203,26 @@ async def main():
             sg.Text(size=(61, 1), pad=(1,1), text="URL"),
             sg.Text(size=(9, 1), pad=(1,1), text="FIX Version", tooltip="Set fixed installed version"),
             sg.Text(size=(9, 1), pad=(1,1), text="KEY",  tooltip="Version filter key for github")],
-            [sg.Column(column_layout, size=(1300, 700), pad=(0,0), scrollable=True, vertical_scroll_only = True)]]
+            [sg.Column(column_layout, size=(1300, 660), pad=(0,0), scrollable=True, vertical_scroll_only = True)]]
 
-    window = sg.Window('MSFS Addon Version Checker 2.0', layout,  return_keyboard_events=True)
+    window = sg.Window('MSFS Addon Version Checker 2.1', layout,  return_keyboard_events=False)
     window.finalize()
     update_from_xml(doc, window)
     event, values = window.read(0)
-    disable_input_fields(window, values, MAX_ROWS)
+    for row in range(MAX_ROWS):
+        disable_input_field(window[(row, "key")], values[(row, "url")])
 
     while True:  
         event, values = window.read()
-        disable_input_fields(window, values, MAX_ROWS)
-        # --- Process buttons --- #
         if event in (sg.WIN_CLOSED, 'Exit'):
             break
+        elif type(event) is tuple:
+            disable_input_field(window[(event[0], "key")], values[(event)])
         elif event == "Save":
             write_to_xml(values, MAX_ROWS)
         elif event == "Run":
-            window["Run"].update(disabled=True)
-            window["Save"].update(disabled=True)
-            # run the whole thing
-            taskList = []
-            for k in range(MAX_ROWS):
-                taskList.append(asyncio.create_task(check_addon(window, values, k, communityFolder)))
-            await asyncio.gather(*taskList)
-            window["Run"].update(disabled=False)
-            window["Save"].update(disabled=False)
+            th = threading.Thread(target=addon_worker_thread, args=(window, values, communityFolder, MAX_ROWS))
+            th.start()
 
 if __name__ == "__main__":
-    asyncio.run(main())
-
+    main()
