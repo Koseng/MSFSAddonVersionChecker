@@ -5,6 +5,7 @@ import asyncio
 import httpx
 import dateutil.parser
 import PySimpleGUI as sg
+from PySimpleGUI.PySimpleGUI import theme_input_background_color
 from xml.dom import minidom
 from bs4 import BeautifulSoup
 
@@ -56,6 +57,13 @@ def disable_input_field(element, value):
     doDisable = "flightsim.to" in value
     element.update(disabled=doDisable)
 
+
+def update_url_background(window, values, index):
+    color = theme_input_background_color()
+    if values[(index, "name")] and not values[(index, "url")]:
+        color = "lightsalmon"
+    window[(index, "url")].update(background_color = color)   
+        
 
 async def check_flightsim(url, onlineVersion, onlineReleaseDate):
     errorText = None
@@ -170,7 +178,23 @@ async def check_all_addons(window, values, communityFolder, rows):
 
 def addon_worker_thread(window, values, communityFolder, rows):
     asyncio.run(check_all_addons(window, values, communityFolder, rows))
-   
+
+
+def read_community_folder(window, values, communityFolder, rows):
+    if communityFolder:
+        list_subfolders = [f.name for f in os.scandir(communityFolder) if f.is_dir()]
+        current_addons = {}
+        last_addon_row = -1
+        for i in range(rows):
+            if values[(i, "name")]:
+                current_addons[values[(i, "name")]] = values[(i, "name")]
+                last_addon_row = i
+        for folder in list_subfolders:
+            if folder not in current_addons and last_addon_row < (rows-1):
+                last_addon_row = last_addon_row + 1
+                window[(last_addon_row, "name")].update(folder)
+                window[(last_addon_row, "url")].update(background_color='lightsalmon')
+
 
 def main():
     # Set execution folder to folder of .py file
@@ -190,13 +214,14 @@ def main():
 
     # Generate UI
     column_layout= [[ sg.Text(size=(52, 1), pad=(1,1), key=(i, "result"), font=("Courier", 10), background_color="lightgrey", text_color="black"),
-                    sg.Input(size=(30, 1), pad=(1,1), key=(i, "name"), border_width=0),
+                    sg.Input(size=(30, 1), pad=(1,1), key=(i, "name"), border_width=0, enable_events=True),
                     sg.Input(size=(70, 1), pad=(1,1), key=(i, "url"), border_width=0, enable_events=True),
                     sg.Input(size=(10, 1), pad=(1,1), key=(i, "version"), border_width=0, tooltip="Set fixed installed version"),
                     sg.Input(size=(10, 1), pad=(1,1), key=(i, "key"), disabled_readonly_background_color = "lightgrey", border_width=0, tooltip="Version filter key for github")] 
                     for i in range(MAX_ROWS)]
 
     layout = [[sg.B("Run", size=(10,1)), sg.B("Save", size=(10,1)), sg.Text("Optional path community folder: "), sg.I(size=(110, 1), pad=(1,15), key="cf") ], 
+            [sg.B("Read Community Folder", size=(22,1))],
             [sg.HorizontalSeparator("Run",pad=(1,10) )],
             [sg.Text(size=(52, 1), pad=(1,1), text="{:<16}{:<16}{:<25}".format("INSTALLED", "ONLINE", "RELEASE"), font=("Courier", 10)),
             sg.Text(size=(26, 1), pad=(1,1), text="NAME"),
@@ -205,22 +230,30 @@ def main():
             sg.Text(size=(9, 1), pad=(1,1), text="KEY",  tooltip="Version filter key for github")],
             [sg.Column(column_layout, size=(1300, 660), pad=(0,0), scrollable=True, vertical_scroll_only = True)]]
 
-    window = sg.Window('MSFS Addon Version Checker 2.1', layout,  return_keyboard_events=False)
+    window = sg.Window('MSFS Addon Version Checker 2.2', layout,  return_keyboard_events=False)
     window.finalize()
     update_from_xml(doc, window)
     event, values = window.read(0)
     for row in range(MAX_ROWS):
         disable_input_field(window[(row, "key")], values[(row, "url")])
+        update_url_background(window, values, row)
 
     while True:  
         event, values = window.read()
         if event in (sg.WIN_CLOSED, 'Exit'):
             break
-        elif type(event) is tuple:
+        elif type(event) is tuple and event[1] == "url":
             disable_input_field(window[(event[0], "key")], values[(event)])
+            update_url_background(window, values, event[0])
+        elif type(event) is tuple and event[1] == "name":
+            update_url_background(window, values, event[0])
         elif event == "Save":
             write_to_xml(values, MAX_ROWS)
+        elif event == "Read Community Folder":
+            read_community_folder(window, values, communityFolder, MAX_ROWS)
         elif event == "Run":
+            for r in range(MAX_ROWS):
+                window[(r, "result")].update("")
             th = threading.Thread(target=addon_worker_thread, args=(window, values, communityFolder, MAX_ROWS))
             th.start()
 

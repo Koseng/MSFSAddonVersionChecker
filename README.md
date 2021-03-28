@@ -13,6 +13,8 @@ Supported sources for addons and tools are:
 [Download the latest released version](https://github.com/Koseng/MSFSAddonVersionChecker/releases/latest). Unpack to a folder and execute checkAddons.exe. To Run the version checks press the Run-Button.
 
 ### Configuration
+Press "Read Community Folder"-Button to get the addons of the community folder. Delete examples if not necessary.
+
 For each addon or tool fill out one line in the table. If you run out of empty lines, save, restart and you get more.
 Do not forget to save your configuration with the Save-Button.
 

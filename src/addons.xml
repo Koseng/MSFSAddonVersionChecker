@@ -1,14 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 	<configuration>
-		<addon name="gravity-airport-edds-stuttgart" url="https://flightsim.to/file/3437/stuttgart-airport-edds-by-gravity-edds-team"/>
-		<addon name="bmw-airport-locher" url="https://flightsim.to/file/1811/locher-sarentino-airfield-loch"/>
+		<addon name="gravity-airport-edds-stuttgart" url="https://flightsim.to/file/3437/stuttgart-airport-edds-by-gravity-edds-team"/>>
 		<addon name="workingtitle-aircraft-cj4" url="https://github.com/Working-Title-MSFS-Mods/fspackages/releases" versionKey="cj4"/>
-		<addon name="workingtitle-g3000" url="https://github.com/Working-Title-MSFS-Mods/fspackages/releases" versionKey="g3000"/>
-		<addon name="workingtitle-g1000" url="https://github.com/Working-Title-MSFS-Mods/fspackages/releases" versionKey="g1000"/>
-		<addon name="evanburnsdev-f22raptor" url="https://github.com/evanburnsdev/f22raptor/releases"/>
-		<addon name="cppr-nameplates-v2-green" url="https://github.com/clompsy/msfs_nameplates/releases"/>
-		<addon name="jplogistics-c152" url="https://github.com/JPLogistics/JPLogistics_C152/releases"/>
 		<addon name="destroyer121-h-135" url="https://flightsim.to/file/8970/airbus-h135-helicopter-project" installedVersion="0.791"/>
-		<addon name="gees" url="https://github.com/scelts/gees/releases" installedVersion="1.1.0"/>
 		<addon name="Pushback Helper" url="https://flightsim.to/file/853/pushback-helper-v2-0" installedVersion="2.4"/>
 	</configuration>
