@@ -170,8 +170,9 @@ async def check_all_addons(window, values, communityFolder, rows):
     window["Run"].update(disabled=True)
     window["Save"].update(disabled=True)
     for rowBatch in chunks(range(rows), 10): # batches of 10
-        taskList = [asyncio.create_task(check_addon(window, values, k, communityFolder)) for k in rowBatch]
-        await asyncio.gather(*taskList)
+        taskList = [asyncio.create_task(check_addon(window, values, k, communityFolder)) for k in rowBatch if values[(k,"name")] and values[(k,"url")]]
+        if taskList:
+            await asyncio.gather(*taskList)
     window["Run"].update(disabled=False)
     window["Save"].update(disabled=False)
 
@@ -207,10 +208,15 @@ def main():
         communityFolder = os.path.join(os.getenv("LOCALAPPDATA"), "MSFSPackages/Community") # Box Version
     doc = minidom.parse(_xmlFile)
     if doc.documentElement.hasAttribute("communityFolder"):  
-        communityFolder = doc.documentElement.getAttribute("communityFolder")  
+        communityFolder = doc.documentElement.getAttribute("communityFolder") 
+
+    folders = 0
+    if communityFolder:
+        list_subfolders = [f.name for f in os.scandir(communityFolder) if f.is_dir()] 
+        folders = len(list_subfolders) + 5
 
     doc = minidom.parse(_xmlFile)
-    MAX_ROWS = max(len(doc.getElementsByTagName("addon")) + 10, 30)
+    MAX_ROWS = max(len(doc.getElementsByTagName("addon")) + 10, 30, folders)
 
     # Generate UI
     column_layout= [[ sg.Text(size=(52, 1), pad=(1,1), key=(i, "result"), font=("Courier", 10), background_color="lightgrey", text_color="black"),
@@ -220,8 +226,8 @@ def main():
                     sg.Input(size=(10, 1), pad=(1,1), key=(i, "key"), disabled_readonly_background_color = "lightgrey", border_width=0, tooltip="Version filter key for github")] 
                     for i in range(MAX_ROWS)]
 
-    layout = [[sg.B("Run", size=(10,1)), sg.B("Save", size=(10,1)), sg.Text("Optional path community folder: "), sg.I(size=(110, 1), pad=(1,15), key="cf") ], 
-            [sg.B("Read Community Folder", size=(22,1))],
+    layout = [[sg.Text("Optional path community folder: "), sg.I(size=(110, 1), pad=(1,15), key="cf")], 
+            [sg.B("Run", size=(10,1)), sg.Text(size=(38, 1)), sg.B("Save", size=(10,1)), sg.B("Read Community Folder", size=(22,1))],
             [sg.HorizontalSeparator("Run",pad=(1,10) )],
             [sg.Text(size=(52, 1), pad=(1,1), text="{:<16}{:<16}{:<25}".format("INSTALLED", "ONLINE", "RELEASE"), font=("Courier", 10)),
             sg.Text(size=(26, 1), pad=(1,1), text="NAME"),
@@ -230,7 +236,7 @@ def main():
             sg.Text(size=(9, 1), pad=(1,1), text="KEY",  tooltip="Version filter key for github")],
             [sg.Column(column_layout, size=(1300, 660), pad=(0,0), scrollable=True, vertical_scroll_only = True)]]
 
-    window = sg.Window('MSFS Addon Version Checker 2.2', layout,  return_keyboard_events=False)
+    window = sg.Window('MSFS Addon Version Checker 2.2.1', layout,  return_keyboard_events=False)
     window.finalize()
     update_from_xml(doc, window)
     event, values = window.read(0)
