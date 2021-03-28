@@ -7,35 +7,31 @@ Supported sources for addons and tools are:
 * flightsim.to
 * github.com
 
-![Picture Application](pics/application.png)
+![Picture Application](pics/guiapplication.png)
 
 ### Installation and Execution
-[Download the latest released version](https://github.com/Koseng/MSFSAddonVersionChecker/releases/latest). Unpack to a folder. For configuration edit addons.xml. Execute checkAddons.exe.
+[Download the latest released version](https://github.com/Koseng/MSFSAddonVersionChecker/releases/latest). Unpack to a folder and execute checkAddons.exe. To Run the version checks press the Run-Button.
 
 ### Configuration
-For configuration edit addons.xml with a proper editor. E.g. "Notepad", "Editor", ["Notepad++"](https://notepad-plus-plus.org/downloads/) or ["Visual Studio Code"](https://code.visualstudio.com/)". 
+For each addon or tool fill out one line in the table. If you run out of empty lines, save, restart and you get more.
+Do not forget to save your configuration with the Save-Button.
 
-![Picture configuration](pics/configuration.PNG)
-
-For each addon or tool add a new line in the xml file and adjust the attributes like name and url accordingly. Edit the parts between the "".
-
-* **name**: Enter the exact name of the addon folder in your community folder. For a tool just enter the name of the tool.
-* **url**: Enter the url to the flightsim or github page like in the examples.
-* **installedVersion**: For tools enter you installed version manually. For addons the version is auto detected. You can also manually enter an installed version for addons. That can be useful if the addon maker does not properly update its version information.
-* **versionKey**: For github you can optionally add a versionKey. That is necessary if an addon maker does release different addons in the the same github repository like Working-Title.
+* **NAME**: Enter the exact name of the addon folder in your community folder. For a tool just enter the name of the tool.
+* **URL**: Enter the url to the flightsim or github page like in the examples.
+* **FIX version**: For tools the installed version cannot be auto detected. Therefore enter the version manually. You can also manually enter an installed version for addons. That can be useful if the addon maker does not properly update its version information.
+* **KEY**: For github you can optionally add an additional version key. That is necessary if an addon maker does release different addons in the the same github repository like Working-Title.
 
 #### Community Folder
-If your addon versions are note detected - "Unavailable", you might have a non standard community folder. Add your community folder in the configuration.
-
-![Picture community](pics/community.PNG)
+If your addon versions are note detected - "Unavailable", you might have a non standard community folder. In that case sdd your community folder in the input box at the top.
 
 ### Development information
 #### Execute Python Script
 If you want to run the python script directly:
 * Install [Python](https://www.python.org/downloads/). On Installation check box for Path inclusion.
 * Install additional libraries via command shell:
-    * `pip install requests`
+    * `pip install httpx`
     * `pip install beautifulsoup4`
+    * `pip install pysimplegui`
     * `pip install pyinstaller`
 * Now switch to the directory and you can run the python script via `python checkAddons.py`. Also it is possible to create a batch file like checkAddons.bat which contains `python checkAddons.py`.
 
