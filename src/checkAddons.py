@@ -9,7 +9,21 @@ from PySimpleGUI.PySimpleGUI import theme_input_background_color
 from xml.dom import minidom
 from bs4 import BeautifulSoup
 
-_xmlFile = "addons.xml"
+XML_FILE = "addons.xml"
+NAME = "name"
+COMMENT = "comment"
+VERSION = "version"
+KEY = "key"
+URL = "url"
+RESULT = "result"
+UNAVAILABLE = "Unavailable"
+RUN = "Run"
+SAVE = "Save"
+ERROR_COLOR = "lightsalmon"
+INFO_COLOR = "lightyellow"
+INPUT_COLOR = theme_input_background_color()
+RESULT_COLOR = "lightgrey"
+CONFIG_COLUMNS = [NAME, COMMENT, URL, VERSION, KEY]
 
 # Create iterator for handling list in even sized chunks of size n
 def chunks(lst, n):
@@ -22,12 +36,14 @@ def update_from_xml(doc, window):
     if doc.documentElement.hasAttribute("communityFolder"):  
         window["cf"].update(doc.documentElement.getAttribute("communityFolder") )
     for i in range(len(addons)):
-        window[(i,"name")].update(addons[i].getAttribute("name"))
-        window[(i,"url")].update(addons[i].getAttribute("url")) 
+        window[(i,NAME)].update(addons[i].getAttribute(NAME))
+        window[(i,URL)].update(addons[i].getAttribute(URL)) 
         if addons[i].hasAttribute("installedVersion"):
-            window[(i,"version")].update(addons[i].getAttribute("installedVersion"))
+            window[(i,VERSION)].update(addons[i].getAttribute("installedVersion"))
         if addons[i].hasAttribute("versionKey"):
-            window[(i,"key")].update(addons[i].getAttribute("versionKey"))
+            window[(i,KEY)].update(addons[i].getAttribute("versionKey"))
+        if addons[i].hasAttribute("comment"):
+            window[(i,COMMENT)].update(addons[i].getAttribute("comment"))
 
 
 def write_to_xml(values, rows):
@@ -35,35 +51,25 @@ def write_to_xml(values, rows):
     if values["cf"]:
         doc.documentElement.setAttribute("communityFolder", values["cf"])
     for j in range(rows):
-        if values[(j, "name")]:
+        if values[(j, NAME)]:
             addon = doc.createElement("addon")
-            addon.setAttribute("name", values[(j, "name")])
-            addon.setAttribute("url", values[(j, "url")])
-            if values[(j, "version")]:
-                addon.setAttribute("installedVersion", values[(j, "version")])
-            if values[(j, "key")]:
-                addon.setAttribute("versionKey", values[(j, "key")])
+            addon.setAttribute(NAME, values[(j, NAME)])
+            addon.setAttribute(URL, values[(j, URL)])
+            if values[(j, VERSION)]:
+                addon.setAttribute("installedVersion", values[(j, VERSION)])
+            if values[(j, KEY)]:
+                addon.setAttribute("versionKey", values[(j, KEY)])
+            if values[(j, COMMENT)]:
+                addon.setAttribute("comment", values[(j, COMMENT)])
             doc.documentElement.appendChild(addon)
-    with open(_xmlFile, 'w') as writer:
+    with open(XML_FILE, 'w') as writer:
         doc.writexml(writer, indent="\t", addindent="\t", newl="\n", encoding="utf-8")
 
 
 def show_error(textElement, text):
-    textElement.update(background_color='lightsalmon')
+    textElement.update(background_color=ERROR_COLOR)
     textElement.update(text)
 
-
-def disable_input_field(element, value):
-    doDisable = "flightsim.to" in value
-    element.update(disabled=doDisable)
-
-
-def update_url_background(window, values, index):
-    color = theme_input_background_color()
-    if values[(index, "name")] and not values[(index, "url")]:
-        color = "lightsalmon"
-    window[(index, "url")].update(background_color = color)   
-        
 
 async def check_flightsim(url, onlineVersion, onlineReleaseDate):
     errorText = None
@@ -132,49 +138,50 @@ def is_newer_version(installedVersion, onlineVersion):
 async def check_addon(window, values, k, communityFolder):
     try:
         errorText = None
-        if values[(k,"name")] and values[(k,"url")]:
-            manifestPath = os.path.join(communityFolder, values[(k,"name")], "manifest.json") 
-            installedVersion = "Unavailable"
-            onlineVersion = "Unavailable"
-            onlineReleaseDate = "Unavailable" 
+        if values[(k,NAME)] and values[(k,URL)]:
+            manifestPath = os.path.join(communityFolder, values[(k,NAME)], "manifest.json") 
+            installedVersion = UNAVAILABLE
+            onlineVersion = UNAVAILABLE
+            onlineReleaseDate = UNAVAILABLE 
             # Installed addon
             if os.path.exists(manifestPath):
                 with open(manifestPath) as f: 
                     manifestJson = json.load(f)
                 installedVersion = manifestJson["package_version"]
-            url = values[(k,"url")]
+            url = values[(k,URL)]
             # Flightsim.to
             if "flightsim.to" in url:
                 errorText, onlineVersion, onlineReleaseDate = await check_flightsim(url, onlineVersion, onlineReleaseDate)
             # Github.com
             elif "github.com" in url:
-                key = values[(k,"key")]
+                key = values[(k,KEY)]
                 errorText, onlineVersion, onlineReleaseDate = await check_github(url, onlineVersion, onlineReleaseDate,key)
             # Overwrite installed version if set
-            if values[(k,"version")]:
-                installedVersion = values[(k,"version")]
+            if values[(k,VERSION)]:
+                installedVersion = values[(k,VERSION)]
             if is_newer_version(installedVersion, onlineVersion):
-                window[(k,"result")].update(background_color='lightyellow')
-                window[(k,"name")].update(background_color='lightyellow')
+                window[(k,RESULT)].update(background_color=INFO_COLOR)
+                window[(k,NAME)].update(background_color=INFO_COLOR)
             # Output
             if not errorText:
-                window[(k,"result")].update("{:<16}{:<16}{:<25}".format(installedVersion, onlineVersion, onlineReleaseDate))
+                window[(k,RESULT)].update("{:<16}{:<16}{:<25}".format(installedVersion, onlineVersion, onlineReleaseDate))
             else:
-                show_error(window[(k,"result")], errorText)
+                show_error(window[(k,RESULT)], errorText)
             window.read(0) # refresh
     except Exception as ex:
-        show_error(window[(k,"result")], str(ex))
+        show_error(window[(k,RESULT)], repr(ex))
 
 
 async def check_all_addons(window, values, communityFolder, rows):
-    window["Run"].update(disabled=True)
-    window["Save"].update(disabled=True)
+    window[RUN].update(disabled=True)
+    window[SAVE].update(disabled=True)
     for rowBatch in chunks(range(rows), 10): # batches of 10
-        taskList = [asyncio.create_task(check_addon(window, values, k, communityFolder)) for k in rowBatch if values[(k,"name")] and values[(k,"url")]]
+        taskList = [asyncio.create_task(check_addon(window, values, k, communityFolder)) for k in rowBatch if values[(k,NAME)] and values[(k,URL)]]
         if taskList:
             await asyncio.gather(*taskList)
-    window["Run"].update(disabled=False)
-    window["Save"].update(disabled=False)
+            await asyncio.sleep(1) # prevent flooding
+    window[RUN].update(disabled=False)
+    window[SAVE].update(disabled=False)
 
 
 def addon_worker_thread(window, values, communityFolder, rows):
@@ -187,14 +194,50 @@ def read_community_folder(window, values, communityFolder, rows):
         current_addons = {}
         last_addon_row = -1
         for i in range(rows):
-            if values[(i, "name")]:
-                current_addons[values[(i, "name")]] = values[(i, "name")]
+            if values[(i, NAME)]:
+                current_addons[values[(i, NAME)]] = values[(i, NAME)]
                 last_addon_row = i
         for folder in list_subfolders:
             if folder not in current_addons and last_addon_row < (rows-1):
                 last_addon_row = last_addon_row + 1
-                window[(last_addon_row, "name")].update(folder)
-                window[(last_addon_row, "url")].update(background_color='lightsalmon')
+                window[(last_addon_row, NAME)].update(folder)
+                window[(last_addon_row, URL)].update(background_color=ERROR_COLOR)
+
+
+def collect_complete_entries(values, rows):
+    entries=[{ col:values[(r,col)] for col in CONFIG_COLUMNS} for r in range(rows) if values[(r,NAME)] and values[(r,URL)]]
+    return entries
+
+
+def delete_all_entries(window, rows):
+    [window[(r, col)].update("", background_color=INPUT_COLOR, disabled=False) for col in CONFIG_COLUMNS for r in range(rows)]
+    [window[(r, RESULT)].update("") for r in range(rows)]
+    
+
+def delete_all_results(window, rows):
+    [window[(r, RESULT)].update("", background_color=RESULT_COLOR) for r in range(rows)]
+
+
+def write_collected_entries(window, entries):
+    [window[(r, col)].update(entries[r][col]) for col in CONFIG_COLUMNS for r in range(len(entries))]
+
+
+def update_row_state(window, values, row):
+    doDisable = "flightsim.to" in values[(row, URL)]
+    window[(row, KEY)].update(disabled=doDisable)
+    color = INPUT_COLOR
+    if values[(row, NAME)] and not values[(row, URL)]:
+        color = ERROR_COLOR
+    window[(row, URL)].update(background_color = color)
+    color = INPUT_COLOR
+    if not values[(row, NAME)] and values[(row, URL)]:
+        color = ERROR_COLOR
+    window[(row, NAME)].update(background_color = color)
+
+
+def update_all_row_states(window, values, MAX_ROWS):
+    for r in range(MAX_ROWS):
+        update_row_state(window, values, r)
 
 
 def main():
@@ -206,7 +249,7 @@ def main():
         communityFolder = os.path.join(os.getenv("APPDATA"), "Microsoft Flight Simulator/Packages/Community") # Steam Version
     if not os.path.exists(communityFolder):
         communityFolder = os.path.join(os.getenv("LOCALAPPDATA"), "MSFSPackages/Community") # Box Version
-    doc = minidom.parse(_xmlFile)
+    doc = minidom.parse(XML_FILE)
     if doc.documentElement.hasAttribute("communityFolder"):  
         communityFolder = doc.documentElement.getAttribute("communityFolder") 
 
@@ -215,51 +258,56 @@ def main():
         list_subfolders = [f.name for f in os.scandir(communityFolder) if f.is_dir()] 
         folders = len(list_subfolders) + 5
 
-    doc = minidom.parse(_xmlFile)
+    doc = minidom.parse(XML_FILE)
     MAX_ROWS = max(len(doc.getElementsByTagName("addon")) + 10, 30, folders)
 
     # Generate UI
-    column_layout= [[ sg.Text(size=(52, 1), pad=(1,1), key=(i, "result"), font=("Courier", 10), background_color="lightgrey", text_color="black"),
-                    sg.Input(size=(30, 1), pad=(1,1), key=(i, "name"), border_width=0, enable_events=True),
-                    sg.Input(size=(70, 1), pad=(1,1), key=(i, "url"), border_width=0, enable_events=True),
-                    sg.Input(size=(10, 1), pad=(1,1), key=(i, "version"), border_width=0, tooltip="Set fixed installed version"),
-                    sg.Input(size=(10, 1), pad=(1,1), key=(i, "key"), disabled_readonly_background_color = "lightgrey", border_width=0, tooltip="Version filter key for github")] 
+    column_layout= [[sg.Text(size=(50, 1), pad=(1,1), key=(i, RESULT), font=("Courier", 10), background_color=RESULT_COLOR, text_color="black"),
+                    sg.Input(size=(26, 1), pad=(1,1), key=(i, NAME), border_width=0, enable_events=True),
+                    sg.Input(size=(20, 1), pad=(1,1), key=(i, COMMENT), border_width=0, text_color="grey"),
+                    sg.Input(size=(65, 1), pad=(1,1), key=(i, URL), border_width=0, enable_events=True),
+                    sg.Input(size=(10, 1), pad=(1,1), key=(i, VERSION), border_width=0, tooltip="Set fixed installed version"),
+                    sg.Input(size=(9, 1), pad=(1,1), key=(i, KEY), disabled_readonly_background_color = "lightgrey", border_width=0, tooltip="Version filter key for github")] 
                     for i in range(MAX_ROWS)]
+   
+    layout = [[sg.Text("Optional path community folder: "), sg.I(size=(120, 1), pad=(1,15), key="cf")], 
+            [sg.B(RUN, size=(10,1)), sg.Text(size=(36, 1)), sg.B(SAVE, size=(10,1)), sg.B("Read Community Folder", size=(25,1)), sg.B("Delete Incomplete Rows", size=(24,1))],
+            [sg.HorizontalSeparator(RUN,pad=(1,10) )],
+            [sg.Text(size=(50, 1), pad=(1,1), text="{:<16}{:<16}{:<25}".format("INSTALLED", "ONLINE", "RELEASE"), font=("Courier", 10)),
+             sg.Text(size=(22, 1), pad=(1,1), text="NAME"),
+             sg.Text(size=(18, 1), pad=(1,1), text="COMMENT"),
+             sg.Text(size=(56, 1), pad=(1,1), text="URL"),
+             sg.Text(size=(9, 1), pad=(1,1), text="FIX Version", tooltip="Set fixed installed version"),
+             sg.Text(size=(8, 1), pad=(1,1), text="KEY",  tooltip="Version filter key for github")],
+            [sg.Column(column_layout, size=(1340, 660), pad=(0,0), scrollable=True, vertical_scroll_only = True)]]
 
-    layout = [[sg.Text("Optional path community folder: "), sg.I(size=(110, 1), pad=(1,15), key="cf")], 
-            [sg.B("Run", size=(10,1)), sg.Text(size=(38, 1)), sg.B("Save", size=(10,1)), sg.B("Read Community Folder", size=(22,1))],
-            [sg.HorizontalSeparator("Run",pad=(1,10) )],
-            [sg.Text(size=(52, 1), pad=(1,1), text="{:<16}{:<16}{:<25}".format("INSTALLED", "ONLINE", "RELEASE"), font=("Courier", 10)),
-            sg.Text(size=(26, 1), pad=(1,1), text="NAME"),
-            sg.Text(size=(61, 1), pad=(1,1), text="URL"),
-            sg.Text(size=(9, 1), pad=(1,1), text="FIX Version", tooltip="Set fixed installed version"),
-            sg.Text(size=(9, 1), pad=(1,1), text="KEY",  tooltip="Version filter key for github")],
-            [sg.Column(column_layout, size=(1300, 660), pad=(0,0), scrollable=True, vertical_scroll_only = True)]]
-
-    window = sg.Window('MSFS Addon Version Checker 2.2.1', layout,  return_keyboard_events=False)
+    window = sg.Window('MSFS Addon Version Checker 2.3', layout,  return_keyboard_events=False)
     window.finalize()
     update_from_xml(doc, window)
     event, values = window.read(0)
-    for row in range(MAX_ROWS):
-        disable_input_field(window[(row, "key")], values[(row, "url")])
-        update_url_background(window, values, row)
+    update_all_row_states(window, values, MAX_ROWS)
 
     while True:  
         event, values = window.read()
         if event in (sg.WIN_CLOSED, 'Exit'):
             break
-        elif type(event) is tuple and event[1] == "url":
-            disable_input_field(window[(event[0], "key")], values[(event)])
-            update_url_background(window, values, event[0])
-        elif type(event) is tuple and event[1] == "name":
-            update_url_background(window, values, event[0])
-        elif event == "Save":
+        elif type(event) is tuple and event[1] == URL:
+            update_row_state(window, values, event[0])
+        elif type(event) is tuple and event[1] == NAME:
+            update_row_state(window, values, event[0])
+        elif event == SAVE:
             write_to_xml(values, MAX_ROWS)
         elif event == "Read Community Folder":
             read_community_folder(window, values, communityFolder, MAX_ROWS)
-        elif event == "Run":
-            for r in range(MAX_ROWS):
-                window[(r, "result")].update("")
+        elif event == "Delete Incomplete Rows":
+            entries = collect_complete_entries(values, MAX_ROWS)
+            delete_all_entries(window, MAX_ROWS)
+            delete_all_results(window, MAX_ROWS)
+            write_collected_entries(window, entries)
+            event, values = window.read(0) # refresh values
+            update_all_row_states(window, values, MAX_ROWS)
+        elif event == RUN:
+            delete_all_results(window, MAX_ROWS)
             th = threading.Thread(target=addon_worker_thread, args=(window, values, communityFolder, MAX_ROWS))
             th.start()
 
