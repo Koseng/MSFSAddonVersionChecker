@@ -1,5 +1,6 @@
 import os, sys, json, re
 import encodings.idna # necessary for .exe
+import webbrowser
 import threading
 import asyncio
 import httpx
@@ -19,6 +20,7 @@ RESULT = "result"
 UNAVAILABLE = "Unavailable"
 RUN = "Run"
 SAVE = "Save"
+GO = "Go"
 ERROR_COLOR = "lightsalmon"
 INFO_COLOR = "lightyellow"
 INPUT_COLOR = theme_input_background_color()
@@ -263,9 +265,10 @@ def main():
 
     # Generate UI
     column_layout= [[sg.Text(size=(50, 1), pad=(1,1), key=(i, RESULT), font=("Courier", 10), background_color=RESULT_COLOR, text_color="black"),
-                    sg.Input(size=(26, 1), pad=(1,1), key=(i, NAME), border_width=0, enable_events=True),
+                    sg.Input(size=(28, 1), pad=(1,1), key=(i, NAME), border_width=0, enable_events=True),
                     sg.Input(size=(20, 1), pad=(1,1), key=(i, COMMENT), border_width=0, text_color="grey"),
-                    sg.Input(size=(65, 1), pad=(1,1), key=(i, URL), border_width=0, enable_events=True),
+                    sg.Input(size=(63, 1), pad=(1,1), key=(i, URL), border_width=0, enable_events=True),
+                    sg.Button(size=(1, 1), pad=(1,1), key=(i, GO), border_width=1, font=("Arial", 7), button_color="lightgrey" ),
                     sg.Input(size=(10, 1), pad=(1,1), key=(i, VERSION), border_width=0, tooltip="Set fixed installed version"),
                     sg.Input(size=(9, 1), pad=(1,1), key=(i, KEY), disabled_readonly_background_color = "lightgrey", border_width=0, tooltip="Version filter key for github")] 
                     for i in range(MAX_ROWS)]
@@ -274,14 +277,14 @@ def main():
             [sg.B(RUN, size=(10,1)), sg.Text(size=(36, 1)), sg.B(SAVE, size=(10,1)), sg.B("Read Community Folder", size=(25,1)), sg.B("Delete Incomplete Rows", size=(24,1))],
             [sg.HorizontalSeparator(RUN,pad=(1,10) )],
             [sg.Text(size=(50, 1), pad=(1,1), text="{:<16}{:<16}{:<25}".format("INSTALLED", "ONLINE", "RELEASE"), font=("Courier", 10)),
-             sg.Text(size=(22, 1), pad=(1,1), text="NAME"),
-             sg.Text(size=(18, 1), pad=(1,1), text="COMMENT"),
-             sg.Text(size=(56, 1), pad=(1,1), text="URL"),
+             sg.Text(size=(24, 1), pad=(1,1), text="NAME"),
+             sg.Text(size=(17, 1), pad=(1,1), text="COMMENT"),
+             sg.Text(size=(57, 1), pad=(1,1), text="URL"),
              sg.Text(size=(9, 1), pad=(1,1), text="FIX Version", tooltip="Set fixed installed version"),
              sg.Text(size=(8, 1), pad=(1,1), text="KEY",  tooltip="Version filter key for github")],
-            [sg.Column(column_layout, size=(1340, 660), pad=(0,0), scrollable=True, vertical_scroll_only = True)]]
+            [sg.Column(column_layout, size=(1355, 660), pad=(0,0), scrollable=True, vertical_scroll_only = True)]]
 
-    window = sg.Window('MSFS Addon Version Checker 2.3', layout,  return_keyboard_events=False)
+    window = sg.Window('MSFS Addon Version Checker 2.3.1', layout,  return_keyboard_events=False)
     window.finalize()
     update_from_xml(doc, window)
     event, values = window.read(0)
@@ -295,6 +298,8 @@ def main():
             update_row_state(window, values, event[0])
         elif type(event) is tuple and event[1] == NAME:
             update_row_state(window, values, event[0])
+        elif type(event) is tuple and event[1] == GO and values[event[0], URL]:
+            webbrowser.open(values[event[0], URL])
         elif event == SAVE:
             write_to_xml(values, MAX_ROWS)
         elif event == "Read Community Folder":
