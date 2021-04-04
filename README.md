@@ -6,6 +6,7 @@ This simple application shows the installed versions and online available versio
 Supported sources for addons and tools are:
 * flightsim.to
 * github.com
+* justflight.com
 
 ![Picture Application](pics/guiapplication.png)
 
