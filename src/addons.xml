@@ -2,6 +2,7 @@
 	<configuration>
 		<addon name="gravity-airport-edds-stuttgart" url="https://flightsim.to/file/3437/stuttgart-airport-edds-by-gravity-edds-team" comment="EXAMPLE ENTRY"/>
 		<addon name="workingtitle-aircraft-cj4" url="https://github.com/Working-Title-MSFS-Mods/fspackages/releases" versionKey="cj4" comment="EXAMPLE ENTRY"/>
-		<addon name="destroyer121-h-135" url="https://flightsim.to/file/8970/airbus-h135-helicopter-project" installedVersion="0.791" comment="EXAMPLE ENTRY"/>
+		<addon name="hpg-airbus-h135" url="https://flightsim.to/file/8970/airbus-h135-helicopter-project" installedVersion="0.791" comment="EXAMPLE ENTRY"/>
 		<addon name="Pushback Helper" url="https://flightsim.to/file/853/pushback-helper-v2-0" installedVersion="2.4" comment="EXAMPLE ENTRY"/>
+		<addon name="dcdesigns-aircraft-f15" url="https://support.justflight.com/support/solutions/articles/17000113616-f-15-eagle-changelog"  comment="EXAMPLE ENTRY"/>
 	</configuration>
