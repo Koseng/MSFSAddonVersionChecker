@@ -4,6 +4,7 @@ import webbrowser
 import threading
 import asyncio
 import PySimpleGUI as sg
+from datetime import timedelta, date
 from release_info_parser import *
 from configuration_persistance import *
 from PySimpleGUI.PySimpleGUI import theme_input_background_color
@@ -21,6 +22,7 @@ GO = "Go"
 CONFIG_COLUMNS = [NAME, COMMENT, URL, VERSION, KEY]
 ERROR_COLOR = "lightsalmon"
 INFO_COLOR = "lightyellow"
+CURRENT_COLOR = "lightblue"
 INPUT_COLOR = theme_input_background_color()
 RESULT_COLOR = "lightgrey"
 
@@ -76,12 +78,16 @@ async def check_addon(window, values, k, communityFolder):
             # Overwrite installed version if set
             if values[(k,VERSION)]:
                 installedVersion = values[(k,VERSION)]
+            # if changed in the last 14 days
+            if (date.today() - onlineReleaseDate.date()) < timedelta(days = 14):
+                window[(k,RESULT)].update(background_color=CURRENT_COLOR)
             if is_newer_version(installedVersion, onlineVersion):
                 window[(k,RESULT)].update(background_color=INFO_COLOR)
                 window[(k,NAME)].update(background_color=INFO_COLOR)
             # Output
             if not errorText:
-                window[(k,RESULT)].update("{:<16}{:<16}{:<25}".format(installedVersion, onlineVersion, onlineReleaseDate))
+                printReleaseDate = onlineReleaseDate.strftime('%d/%m/%Y')
+                window[(k,RESULT)].update("{:<16}{:<16}{:<25}".format(installedVersion, onlineVersion, printReleaseDate))
             else:
                 show_error(window[(k,RESULT)], errorText)
             window.read(0) # refresh
@@ -230,7 +236,7 @@ def main():
              sg.Text(size=(8, 1), pad=(1,1), text="KEY",  tooltip="Version filter key for github")],
             [sg.Column(column_layout, size=(1355, 660), pad=(0,0), scrollable=True, vertical_scroll_only = True)]]
 
-    window = sg.Window('MSFS Addon Version Checker 2.4', layout,  return_keyboard_events=False)
+    window = sg.Window('MSFS Addon Version Checker 2.5', layout,  return_keyboard_events=False)
     window.finalize()
 
     # Fill content to UI

@@ -16,14 +16,13 @@ async def check_flightsim(url, onlineVersion, onlineReleaseDate):
             th = soup.find_all('th')
             for h in th:
                 if h.next_sibling.next_sibling:
-                    if h.text not in headerDict:
-                        headerDict[h.text] = h.next_sibling.next_sibling.text
+                    # last entries on the page are the correct ones, overwriting is ok
+                    headerDict[h.text] = h.next_sibling.next_sibling.text
             if "Version" in headerDict:
                 onlineVersion = headerDict["Version"]
             if "Last Updated" in headerDict:
                 releaseDateString = headerDict["Last Updated"]
-                dt = datetime.strptime(releaseDateString, "%B %d, %Y")
-                onlineReleaseDate = dt.strftime('%d/%m/%Y')
+                onlineReleaseDate = datetime.strptime(releaseDateString, "%B %d, %Y")
         else:
             errorText = f"Url: {r.status_code} {r.reason_phrase}"
     return errorText, onlineVersion, onlineReleaseDate
@@ -43,8 +42,7 @@ async def check_justflight(url, onlineVersion, onlineReleaseDate):
                     versionDate = re.search(regex, content)
                     if versionDate:
                         releaseDateString = versionDate.group(1)
-                        dt = datetime.strptime(releaseDateString, '%d/%m/%Y')
-                        onlineReleaseDate = dt.strftime('%d/%m/%Y')
+                        onlineReleaseDate = datetime.strptime(releaseDateString, '%d/%m/%Y')
                         onlineVersion = versionDate.group(2)
         else:
             errorText = f"Url: {r.status_code} {r.reason_phrase}"
@@ -66,8 +64,7 @@ async def check_github(url, onlineVersion, onlineReleaseDate, key):
                 versionJson = next((x for x in releasesJson if versionKey in x["tag_name"]), None)
             if versionJson:
                 onlineVersion = versionJson["tag_name"]
-                dt = dateutil.parser.isoparse(versionJson["published_at"])
-                onlineReleaseDate = dt.strftime('%d/%m/%Y')
+                onlineReleaseDate = dateutil.parser.isoparse(versionJson["published_at"])
         else:
             errorText = f"Url: {r.status_code} {r.reason_phrase}"
     return errorText, onlineVersion, onlineReleaseDate
